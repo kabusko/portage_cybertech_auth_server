@@ -1,0 +1,8 @@
+logging:
+  level:
+    root: INFO
+    com.portagecybertech.authserver: DEBUG
+
+spring:
+  application:
+    name: portage-cybertech-auth-server

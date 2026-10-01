@@ -1,0 +1,124 @@
+openapi: 3.0.3
+info:
+  title: Portage CyberTech Auth Server
+  description: JWT Authorization Server — issues signed access tokens and publishes JWKS for verification.
+  version: 0.0.1
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8082
+
+security: []
+
+paths:
+  /api/tokens:
+    post:
+      summary: Generate a signed access token
+      operationId: generateAccessToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateAccessTokenRequest'
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: Invalid request (missing/invalid sub, malformed JSON)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Unsupported Content-Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /portage_auth_server/.well-known/jwks.json:
+    get:
+      summary: Get current public signing keys (JWKS)
+      description: Returns an empty key set until the first access token has been issued, since the signing key is created on demand rather than at startup.
+      operationId: getJwks
+      responses:
+        '200':
+          description: JSON Web Key Set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwkSet'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    GenerateAccessTokenRequest:
+      type: object
+      required: [sub]
+      properties:
+        sub:
+          type: string
+          description: Subject identifier the token is issued for
+          example: alice
+
+    AccessTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Signed RS256 JWT access token
+
+    JwkSet:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+
+    Jwk:
+      type: object
+      properties:
+        kty: { type: string, example: RSA }
+        use: { type: string, example: sig }
+        alg: { type: string, example: RS256 }
+        kid: { type: string }
+        n: { type: string }
+        e: { type: string }
+
+    ErrorResponse:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        errorId: { type: string }
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      type: object
+      properties:
+        code: { type: integer }
+        field: { type: string }
+        objectName: { type: string }
+        message: { type: string }
+        rejectedValue: { type: string, nullable: true }
